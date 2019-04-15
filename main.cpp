@@ -18,6 +18,8 @@ using namespace std;
 
 string countrieslist[195];
 
+char charbuf[100];
+
 string materials[5] = {"plain paper","foil paper","copper","silver","non-listed material"};
 string shapes[5] = {"square","triangle","round","rectangle","other"};
 string purposes[3] = {"common purpose","special purpose","non-postal use"};
@@ -41,25 +43,20 @@ protected:
     mark* m;
     int amt;
 public:
-
-    commonfactory()
-    {
-        amt = 0;
-    }
-
-    virtual void prestory(mark &k);
-
+    virtual void prestory(mark &k) = 0;
     void setmark(string country)
     {
         mark* buf = new mark[amt];
         for (int i = 0; i < amt; i++) buf[i] = m[i];
-        amt++;
+        amt=amt+1;
         mark* m = new mark[amt];
-        for (int i = 0; i < amt; i++) m[i] = buf[i];
+        for (int i = 0; i < amt-1; i++) m[i] = buf[i];
         m[amt-1].country = country;
         delete[]buf;
         cout<<"Name: ";
-        cin>>m[amt-1].name;
+        scanf(" %[^\n]s",charbuf);
+        string buf2(charbuf);
+        m[amt-1].name = buf2;
         cout<<"Purpose: "<<endl;
         for (int i = 0; i < 3; i++) cout<<i+1<<" - "<<purposes[i]<<endl;
         do{
@@ -117,102 +114,129 @@ public:
         delete[]buf;
     }
 
-    ~commonfactory()
+    void show(int start)
     {
-        delete[]m;
+
+        mark temp;
+        if (amt>0)
+            for (int i = 0; i < amt; i++)
+            {
+                temp = m[i];
+                cout<<"1";
+                cout<<i+start<<": "<<temp.name<<", "<<temp.country<< ", "<<temp.amount << ((temp.amount == "1") ? " piece. Made of " : " pcs. Made of ") << materials[temp.material-'0'-1]
+                <<", for "<<purposes[temp.purpose-'0'-1]<<"."<<endl<<"Emitent type: "<<emittypes[temp.emittype-'0'-1]<<". Shape: "<<shapes[temp.shape-'0'-1]<<". "
+                <<((temp.prestory == "---")?temp.prestory: "")<<endl<<"----------------------------------------------"<<endl;
+            }
     }
 };
 
 class realmark : public commonfactory
 {
-    void prestory(mark& mk) override
-    {
-        cout<<"Pre-story(if not needed, type three '-' symbols): ";
-        cin>>mk.prestory;
-    }
+public:
 
     realmark()
     {
+        amt = 0;
     }
-
+    void prestory(mark& mk)
+    {
+        cout<<"Pre-story(if not needed, type three '-' symbols): ";
+        scanf(" %[^\n]s",charbuf);
+        string buf3(charbuf);
+        mk.prestory=buf3;
+    }
     ~realmark()
     {
+        delete[]m;
     }
 };
 
 class virmark : public commonfactory
 {
-    void prestory(mark& mk) override
+public:
+    virmark()
+    {
+        amt = 0;
+    }
+    void prestory(mark& mk)
     {
         mk.prestory = "---";
     }
-
-    virmark()
-    {
-    }
-
     ~virmark()
     {
+        delete[]m;
     }
 };
 
 class mainfactory
 {
 private:
-    virmark vm;
-    realmark rm;
+    virmark* vm;
+    realmark* rm;
+    string* buf;
 public:
+    mainfactory()
+    {
+        rm = new realmark;
+        vm = new virmark;
+    }
+
     void show()
     {
-        mark temp;
-        for (int i = 0;i<rm.getamt();i++)
+        /*mark temp;
+        if (rm->getamt()>0)
+        for (int i = 0; i < rm->getamt();i++)
         {
-            temp = rm.getmark(i);
+            cout<<"1";
+            temp = rm->getmark(i);
             cout<<i+1<<": "<<temp.name<<", "<<temp.country<< ", "<<temp.amount << ((temp.amount == "1") ? " piece. Made of " : " pcs. Made of ") << materials[temp.material-'0'-1]
             <<", for "<<purposes[temp.purpose-'0'-1]<<"."<<endl<<"Emitent type: "<<emittypes[temp.emittype-'0'-1]<<". Shape: "<<shapes[temp.shape-'0'-1]<<". "
-            <<((strcmp(temp.prestory.c_str(), "---"))?temp.prestory: "")<<endl<<"----------------------------------------------"<<endl;
-        }
-        for (int i = 0;i<vm.getamt();i++)
-        {
-            temp = vm.getmark(i);
-            cout<<i+1+rm.getamt()<<": "<<temp.name<<", "<<temp.country<< ", "<<temp.amount << ((temp.amount == "1") ? " piece. Made of " : " pcs. Made of ") << materials[temp.material-'0'-1]
-            <<", for "<<purposes[temp.purpose-'0'-1]<<"."<<endl<<"Emitent type: "<<emittypes[temp.emittype-'0'-1]<<". Shape: "<<shapes[temp.shape-'0'-1]<<". "
-            <<((strcmp(temp.prestory.c_str(), "---"))?temp.prestory: "")<<endl<<"----------------------------------------------"<<endl;
-        }
+            <<((temp.prestory == "---")?temp.prestory: "")<<endl<<"----------------------------------------------"<<endl;
+        }*/
+        rm->show(1);
+        vm->show(rm->getamt());
+
     }
 
     void newmark()
     {
-        string buf;
         cout<< "Country: ";
-        cin >> buf;
+        scanf(" %[^\n]s",charbuf);
+        buf = new string(charbuf);
+        //string buf(k);
         char isreal = '0';
-        for (i = 0;i<195;i++)
-            if (strcmp(buf.c_str(),countrieslist.c_str())) isreal = '1';
-        if (isreal == '1')
+        for (int i = 0;i<195;i++)
+            if (*buf == countrieslist[i])
+            {
+                isreal = '1';
+                break;
+            }
+        if (isreal == '1') rm->setmark(*buf);
+        else vm->setmark(*buf);
     }
 
     void deletemark()
     {
         int select;
-        if (rm.getamt()>0 || vm.getamt>0)
+        if (rm->getamt()>0 || vm->getamt()>0)
         {
-            cout<< "Put in number from 1 to " << rm.getamt()+vm.getamt <<", 0 to abort: ";
+            cout<< "Put in number from 1 to " << rm->getamt()+vm->getamt() <<", 0 to abort: ";
             cin>>select;
             if (select!=0)
             {
                 select--;
-                if (select<rm.getamt()&&select>0)
+                if (select<rm->getamt()&&select>0)
                 {
-                    rm.deletemark(select);
+                    rm->deletemark(select);
                 }
                 else
                 {
-                    if (select-rm.getamt()<vm.getamt()&&select>0)
+                    if (select-rm->getamt()<vm->getamt()&&select>0)
                     {
-                        rm.deletemark(select-rm.getamt());
+                        rm->deletemark(select-rm->getamt());
                     }
-                    else cout<<"Error! No element with number "<<select+1<<"!"<<endl;;
+                    else cout<<"Error! No element with number "<<select+1<<"!"<<endl;
+
                 }
             }
         }
@@ -231,6 +255,7 @@ public:
 int main()
 {
     int choice;
+    mainfactory* fact = new mainfactory;
     ifstream fst;
     fst.open("clist.txt");
     for (int i = 0; i < 195; i++)
@@ -242,12 +267,30 @@ int main()
         cout << "=============================================="<<endl;
         switch(choice)
         {
-            case 6:
-            {
-                for (int i = 0; i <195; i++)
-                    cout<<i+1<<". "<<countrieslist[i]<<endl;
-
-            }
+        case 1:
+        {
+            fact->newmark();
+        }break;
+        case 2:
+        {
+            fact->deletemark();
+        }break;
+        case 3:
+        {
+            fact->load();
+        }break;
+        case 4:
+        {
+            fact->save();
+        }break;
+        case 5:
+        {
+            fact->show();
+        }break;
+        case 6:
+        {
+            for (int i = 0; i <195; i++) cout<<i+1<<". "<<countrieslist[i]<<endl;
+        }break;
         }
         if (choice!=0) cout << "=============================================="<<endl;
     }while (choice !=0);
